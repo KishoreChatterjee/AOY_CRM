@@ -3,6 +3,8 @@ from .models import Lead
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.utils import timezone
+from datetime import datetime
 
 def dashboard_view(request):
     message = ""
@@ -17,14 +19,29 @@ def dashboard_view(request):
         profession = request.POST.get("profession")
         source = request.POST.get("source")
         session_interest = request.POST.get("session_interest")
-        enquiry_datetime = request.POST.get("enquiry_datetime") or None
+        enquiry_datetime_raw = request.POST.get("enquiry_datetime") or None
         lead_status = request.POST.get("lead_status")
         priority = request.POST.get("priority")
 
         selected_goal = request.POST.get("health_goals")
         custom_goal = request.POST.get("custom_health_goal")
 
-        # Determine final values
+        # Parse enquiry_datetime safely
+        enquiry_datetime = None
+        if enquiry_datetime_raw:
+            try:
+                enquiry_datetime = datetime.strptime(enquiry_datetime_raw, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                enquiry_datetime = None  # fallback if user gives wrong format
+
+        # Optional: handle dob parsing too
+        if dob:
+            try:
+                dob = datetime.strptime(dob, '%Y-%m-%d').date()
+            except ValueError:
+                dob = None
+
+        # Determine final health goal
         health_goal = "Other" if selected_goal == "Other" else selected_goal
         custom_health_goal = custom_goal if selected_goal == "Other" else ""
 
@@ -97,11 +114,18 @@ def edit_lead(request, pk):
         lead.profession = request.POST.get('profession')
         lead.source = request.POST.get('source')
         lead.session_interest = request.POST.get('session_interest')
-        lead.enquiry_datetime = request.POST.get('enquiry_datetime') or None
+        
+        enquiry_datetime = request.POST.get('enquiry_datetime')
+        if enquiry_datetime:
+            lead.enquiry_datetime = enquiry_datetime
+        else:
+            lead.enquiry_datetime = timezone.now()  # fallback value
+
         lead.lead_status = request.POST.get('lead_status')
         lead.priority = request.POST.get('priority')
         lead.health_goal = request.POST.get('health_goals')
         lead.custom_health_goal = request.POST.get('custom_health_goal')
+
         lead.save()
         return redirect('admin_dashboard')
 
