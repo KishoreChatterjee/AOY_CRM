@@ -26,13 +26,14 @@ def dashboard_view(request):
         selected_goal = request.POST.get("health_goals")
         custom_goal = request.POST.get("custom_health_goal")
 
-        # Parse enquiry_datetime safely
+        # Parse enquiry_datetime safely with timezone awareness
         enquiry_datetime = None
         if enquiry_datetime_raw:
             try:
-                enquiry_datetime = datetime.strptime(enquiry_datetime_raw, '%Y-%m-%dT%H:%M')
+                naive_dt = datetime.strptime(enquiry_datetime_raw, '%Y-%m-%dT%H:%M')
+                enquiry_datetime = timezone.make_aware(naive_dt)
             except ValueError:
-                enquiry_datetime = None  # fallback if user gives wrong format
+                enquiry_datetime = None
 
         # Optional: handle dob parsing too
         if dob:
@@ -101,6 +102,7 @@ def admin_dashboard(request):
 
     return render(request, 'admin.html', context)
 
+
 def edit_lead(request, pk):
     lead = get_object_or_404(Lead, pk=pk)
 
@@ -114,12 +116,16 @@ def edit_lead(request, pk):
         lead.profession = request.POST.get('profession')
         lead.source = request.POST.get('source')
         lead.session_interest = request.POST.get('session_interest')
-        
-        enquiry_datetime = request.POST.get('enquiry_datetime')
-        if enquiry_datetime:
-            lead.enquiry_datetime = enquiry_datetime
+
+        enquiry_datetime_raw = request.POST.get('enquiry_datetime')
+        if enquiry_datetime_raw:
+            try:
+                naive_dt = datetime.strptime(enquiry_datetime_raw, '%Y-%m-%dT%H:%M')
+                lead.enquiry_datetime = timezone.make_aware(naive_dt)
+            except ValueError:
+                lead.enquiry_datetime = timezone.now()
         else:
-            lead.enquiry_datetime = timezone.now()  # fallback value
+            lead.enquiry_datetime = timezone.now()
 
         lead.lead_status = request.POST.get('lead_status')
         lead.priority = request.POST.get('priority')
@@ -131,10 +137,12 @@ def edit_lead(request, pk):
 
     return render(request, 'edit_lead.html', {'lead': lead})
 
+
 def delete_lead(request, pk):
     lead = get_object_or_404(Lead, pk=pk)
     lead.delete()
     return redirect('admin_dashboard')
+
 
 def admin_login(request):
     if request.method == "POST":
@@ -148,6 +156,7 @@ def admin_login(request):
         else:
             messages.error(request, "Invalid credentials")
     return render(request, 'admin_login.html')
+
 
 def admin_logout(request):
     logout(request)
