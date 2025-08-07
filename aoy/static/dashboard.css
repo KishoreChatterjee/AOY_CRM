@@ -59,3 +59,16 @@ button.btn-primary:hover {
         padding: 25px 20px;
     }
 }
+
+.watermark {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    color: rgba(164, 159, 159, 0.322); /* Light and transparent text */
+    pointer-events: none; /* Prevents clicks */
+    user-select: none;    /* Prevents selection */
+    z-index: 9999;
+}
+
