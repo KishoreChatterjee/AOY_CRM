@@ -1,4 +1,6 @@
+from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
+import openpyxl
 from .models import Lead
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -161,3 +163,48 @@ def admin_login(request):
 def admin_logout(request):
     logout(request)
     return redirect('admin_login')
+
+
+def export_leads_excel(request):
+    # Create workbook and worksheet
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Leads"
+
+    # Define headers
+    headers = [
+        "Client Name", "Mobile", "Profession", "Location", "Date of Birth",
+        "Height", "Weight", "Source", "Session Interest", "Enquiry DateTime",
+        "Lead Status", "Priority", "Health Goal", "Custom Health Goal"
+    ]
+    ws.append(headers)
+
+    # Fetch all leads from DB
+    leads = Lead.objects.all()
+
+    for lead in leads:
+        ws.append([
+            lead.name,
+            lead.mobile,
+            lead.profession,
+            lead.location,
+            lead.dob.strftime("%Y-%m-%d") if lead.dob else "",
+            lead.height,
+            lead.weight,
+            lead.source,
+            lead.session_interest,
+            lead.enquiry_datetime.strftime("%Y-%m-%d %H:%M") if lead.enquiry_datetime else "",
+            lead.lead_status,
+            lead.priority,
+            lead.health_goal,
+            lead.custom_health_goal or ""
+        ])
+
+    # Create HTTP response with Excel content
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="leads.xlsx"'
+    wb.save(response)
+
+    return response

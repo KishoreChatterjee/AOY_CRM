@@ -6,6 +6,7 @@ from .views import (
     delete_lead,
     admin_login,
     admin_logout,
+    export_leads_excel,
 )
 
 urlpatterns = [
@@ -17,4 +18,8 @@ urlpatterns = [
     # 🔐 Login and Logout for Admin
     path('admin-login/', admin_login, name='admin_login'),
     path('admin-logout/', admin_logout, name='admin_logout'),
+
+    # 📤 Export Leads
+    path("export-leads/", export_leads_excel, name="export_leads"),
 ]
+
